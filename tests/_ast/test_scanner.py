@@ -454,17 +454,31 @@ class TestScanParseIntegration:
         assert len(result.notebook.cells) == 3
 
     @staticmethod
-    def test_line_continuation_at_eof_file() -> None:
+    def test_line_continuation_at_eof_file(tmp_path: object) -> None:
         """Test a notebook with a backslash continuation at EOF.
 
         The scanner should recover the cell as unparsable and find
         the run guard.
         """
-        filepath = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "codegen_data/_test_line_continuation_at_eof.py",
+        filepath = Path(str(tmp_path)) / "line_continuation_at_eof.py"
+        filepath.write_text(
+            textwrap.dedent("""\
+                import marimo
+
+                __generated_with = "0.1.0"
+                app = marimo.App()
+
+
+                @app.cell
+                def _():
+                    x = 1 + \\
+
+
+                if __name__ == "__main__":
+                    app.run()
+            """)
         )
-        result = get_notebook_status(filepath)
+        result = get_notebook_status(str(filepath))
         assert result.status == "has_errors"
         assert result.notebook is not None
         assert len(result.notebook.cells) == 1
